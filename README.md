@@ -15,6 +15,23 @@
 
 ---
 
+## 🎉 Recent Updates
+
+### Latest Improvements (January 2025)
+
+- **✨ Accessibility Enhancement**: Fixed 25 CSS contrast issues to meet WCAG AA/AAA standards
+  - Improved text readability across all interface elements
+  - Enhanced color contrast for users with visual impairments
+  - Better visibility in various lighting conditions
+  
+- **🔧 Shodan Integration Refinement**: Improved error handling for OSINT queries
+  - Graceful handling of IPs without available data
+  - User-friendly informational messages
+  - Eliminated unnecessary console errors
+  - Better experience when querying simulated/private IP addresses
+
+---
+
 ## 📋 Table of Contents
 
 - [Overview](#-overview)
