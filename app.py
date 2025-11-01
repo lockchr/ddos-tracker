@@ -680,6 +680,11 @@ def create_real_attack():
 def index():
     return render_template('index.html')
 
+@app.route('/favicon.ico')
+def favicon():
+    """Handle favicon requests to prevent 404 errors."""
+    return '', 204
+
 @app.route('/api/attacks')
 def get_attacks():
     """Get all recent attacks"""
