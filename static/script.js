@@ -129,7 +129,7 @@ function drawAttackOnMap(attack) {
         fillOpacity: 1
     }).addTo(map);
     
-    // Add popup to destination marker
+    // Add popup to destination marker with Shodan intel option
     const popupContent = `
         <div class="popup-content">
             <div class="popup-title">${attack.attack_type}</div>
@@ -140,13 +140,20 @@ function drawAttackOnMap(attack) {
             ${attack.destination_ip ? `<div><strong>Target IP:</strong> ${attack.destination_ip}</div>` : ''}
             <div><strong>Bandwidth:</strong> ${attack.bandwidth}</div>
             <div><strong>Packets:</strong> ${attack.packets.toLocaleString()}</div>
+            <div class="popup-shodan-section">
+                <button class="btn-shodan" onclick="loadShodanData('${attack.source_ip}', 'source', this)">🔍 Source IP Intel</button>
+                <button class="btn-shodan" onclick="loadShodanData('${attack.destination_ip}', 'target', this)">🔍 Target IP Intel</button>
+                <div id="shodan-data-container" class="shodan-data-container"></div>
+            </div>
         </div>
     `;
     
     destinationMarker.bindPopup(popupContent, {
         closeButton: true,
         autoClose: true,
-        closeOnClick: true
+        closeOnClick: true,
+        maxWidth: 400,
+        maxHeight: 500
     });
     
     // Store references for cleanup
@@ -407,11 +414,18 @@ document.getElementById('toggle-attacks').addEventListener('click', function() {
 // Clear map
 document.getElementById('clear-map').addEventListener('click', function() {
     // Remove all lines and markers
-    for (const line of attackLines) {
-        map.removeLayer(line);
+    for (const attackLine of attackLines) {
+        if (attackLine.line && map.hasLayer(attackLine.line)) {
+            map.removeLayer(attackLine.line);
+        }
+        if (attackLine.decorator && map.hasLayer(attackLine.decorator)) {
+            map.removeLayer(attackLine.decorator);
+        }
     }
     for (const marker of attackMarkers) {
-        map.removeLayer(marker);
+        if (marker && map.hasLayer(marker)) {
+            map.removeLayer(marker);
+        }
     }
     
     attackLines = [];
@@ -1894,6 +1908,112 @@ async function updateCountriesAtRisk() {
         if (listElement) {
             listElement.innerHTML = '<div class="risk-item loading">Error loading data...</div>';
         }
+    }
+}
+
+// Load Shodan intelligence data for an IP
+async function loadShodanData(ip, ipType, buttonElement) {
+    const container = document.getElementById('shodan-data-container');
+    if (!container) return;
+    
+    // Disable button and show loading
+    buttonElement.disabled = true;
+    buttonElement.textContent = '⏳ Loading...';
+    
+    container.innerHTML = '<div class="shodan-loading">Fetching threat intelligence...</div>';
+    
+    try {
+        const response = await fetch(`/api/osint/ip/${encodeURIComponent(ip)}`);
+        const data = await response.json();
+        
+        // Handle 404 (no data available) or 503 (service unavailable) gracefully
+        if (response.status === 404 || response.status === 503) {
+            container.innerHTML = `<div class="shodan-info">ℹ️ ${data.message || 'No Shodan data available for this IP'}</div>`;
+            buttonElement.textContent = ipType === 'source' ? '🔍 Source IP Intel' : '🔍 Target IP Intel';
+            buttonElement.disabled = false;
+            return;
+        }
+        
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to fetch Shodan data');
+        }
+        
+        if (!data.enriched) {
+            container.innerHTML = `<div class="shodan-info">ℹ️ No Shodan data available for this IP</div>`;
+            buttonElement.textContent = ipType === 'source' ? '🔍 Source IP Intel' : '🔍 Target IP Intel';
+            buttonElement.disabled = false;
+            return;
+        }
+        
+        // Build Shodan data display
+        let html = `<div class="shodan-results">`;
+        html += `<div class="shodan-header">🔍 ${ipType === 'source' ? 'Source' : 'Target'} IP: ${ip}</div>`;
+        
+        // Organization info
+        if (data.org || data.isp) {
+            html += `<div class="shodan-section">`;
+            html += `<strong>Organization:</strong> ${data.org || data.isp || 'Unknown'}`;
+            html += `</div>`;
+        }
+        
+        // Hostnames
+        if (data.hostnames && data.hostnames.length > 0) {
+            html += `<div class="shodan-section">`;
+            html += `<strong>Hostnames:</strong> ${data.hostnames.slice(0, 3).join(', ')}`;
+            if (data.hostnames.length > 3) {
+                html += ` <span class="shodan-more">(+${data.hostnames.length - 3} more)</span>`;
+            }
+            html += `</div>`;
+        }
+        
+        // Open ports
+        if (data.ports && data.ports.length > 0) {
+            html += `<div class="shodan-section">`;
+            html += `<strong>Open Ports:</strong> <span class="shodan-ports">`;
+            html += data.ports.slice(0, 10).map(p => `<span class="port-badge">${p}</span>`).join(' ');
+            if (data.ports.length > 10) {
+                html += ` <span class="shodan-more">(+${data.ports.length - 10} more)</span>`;
+            }
+            html += `</span></div>`;
+        }
+        
+        // Vulnerabilities
+        if (data.vulns && data.vulns.length > 0) {
+            html += `<div class="shodan-section shodan-vulns">`;
+            html += `<strong>⚠️ Known Vulnerabilities:</strong> `;
+            html += data.vulns.slice(0, 5).map(v => `<span class="vuln-badge">${v}</span>`).join(' ');
+            if (data.vulns.length > 5) {
+                html += ` <span class="shodan-more">(+${data.vulns.length - 5} more)</span>`;
+            }
+            html += `</div>`;
+        }
+        
+        // Tags
+        if (data.tags && data.tags.length > 0) {
+            html += `<div class="shodan-section">`;
+            html += `<strong>Tags:</strong> `;
+            html += data.tags.map(t => `<span class="tag-badge">${t}</span>`).join(' ');
+            html += `</div>`;
+        }
+        
+        // Last update
+        if (data.last_update) {
+            html += `<div class="shodan-section shodan-footer">`;
+            html += `<small>Last scanned: ${new Date(data.last_update).toLocaleDateString()}</small>`;
+            html += `</div>`;
+        }
+        
+        html += `</div>`;
+        container.innerHTML = html;
+        
+        buttonElement.textContent = '✓ Loaded';
+        buttonElement.style.backgroundColor = '#26de81';
+        
+    } catch (error) {
+        console.error('Error loading Shodan data:', error);
+        container.innerHTML = `<div class="shodan-error">❌ ${error.message}</div>`;
+        buttonElement.textContent = ipType === 'source' ? '🔍 Source IP Intel' : '🔍 Target IP Intel';
+        buttonElement.disabled = false;
     }
 }
 

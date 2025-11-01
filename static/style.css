@@ -121,7 +121,7 @@ header h1 {
 }
 
 .search-input::placeholder {
-    color: #aaa;
+    color: #c0c0c0;
 }
 
 .btn-clear {
@@ -131,7 +131,7 @@ header h1 {
     transform: translateY(-50%);
     background: none;
     border: none;
-    color: #aaa;
+    color: #c0c0c0;
     font-size: 1.2em;
     cursor: pointer;
     padding: 5px 10px;
@@ -354,7 +354,7 @@ body.dark-mode .tab-button.active {
 }
 
 .detail-label {
-    color: #d0d0d0;
+    color: #e8e8e8;
     font-size: 0.9em;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -446,7 +446,7 @@ body.dark-mode .modal-section {
 
 .stat-label {
     font-size: 0.9em;
-    color: #d0d0d0;
+    color: #e8e8e8;
     margin-bottom: 10px;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -618,7 +618,7 @@ body.dark-mode .modal-section {
 }
 
 .trend-label {
-    color: #d0d0d0;
+    color: #e8e8e8;
     font-size: 0.9em;
     margin-right: 10px;
 }
@@ -694,7 +694,7 @@ body.dark-mode .modal-section {
 }
 
 .factor-header span:first-child {
-    color: #d0d0d0;
+    color: #e8e8e8;
 }
 
 .factor-header span:last-child {
@@ -778,8 +778,8 @@ body.dark-mode .modal-section {
 
 .risk-item.loading {
     justify-content: center;
-    color: #aaa;
-    border-left-color: #aaa;
+    color: #c0c0c0;
+    border-left-color: #c0c0c0;
 }
 
 .risk-item.rank-1 {
@@ -821,7 +821,7 @@ body.dark-mode .modal-section {
 }
 
 .risk-country-stats {
-    color: #aaa;
+    color: #c0c0c0;
     font-size: 0.8em;
 }
 
@@ -1146,7 +1146,7 @@ body.dark-mode .countries-at-risk {
 }
 
 .attack-details {
-    color: #d0d0d0;
+    color: #e8e8e8;
     font-size: 0.85em;
     line-height: 1.6;
 }
@@ -1473,7 +1473,7 @@ body.dark-mode .countries-at-risk {
 }
 
 .ticker-route {
-    color: #d0d0d0;
+    color: #e8e8e8;
     font-size: 0.9em;
 }
 
@@ -1483,7 +1483,7 @@ body.dark-mode .countries-at-risk {
 }
 
 .ticker-time {
-    color: #aaa;
+    color: #c0c0c0;
     font-size: 0.85em;
 }
 
@@ -1540,7 +1540,7 @@ body.dark-mode .ticker-wrapper {
 }
 
 .chart-modal-label {
-    color: #d0d0d0;
+    color: #e8e8e8;
     font-size: 0.9em;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -1616,7 +1616,7 @@ body.dark-mode .ticker-wrapper {
 }
 
 .attack-item-details {
-    color: #d0d0d0;
+    color: #e8e8e8;
     font-size: 0.9em;
     line-height: 1.8;
 }
@@ -1627,7 +1627,7 @@ body.dark-mode .ticker-wrapper {
 
 .chart-modal-note {
     text-align: center;
-    color: #aaa;
+    color: #c0c0c0;
     font-size: 0.9em;
     margin-top: 15px;
     padding: 10px;
@@ -1661,7 +1661,7 @@ body.dark-mode .ticker-wrapper {
 
 .no-data {
     text-align: center;
-    color: #aaa;
+    color: #c0c0c0;
     padding: 30px;
     font-size: 1.1em;
 }
@@ -1714,4 +1714,187 @@ body.dark-mode .chart-modal-attack-item:hover {
     .modal-footer .btn {
         max-width: 100%;
     }
+}
+
+/* Shodan Intelligence Popup Styles */
+.popup-shodan-section {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgba(0, 217, 255, 0.3);
+}
+
+.btn-shodan {
+    display: inline-block;
+    padding: 8px 15px;
+    margin: 5px 5px 10px 0;
+    background: rgba(100, 181, 246, 0.8);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-size: 0.85em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-shodan:hover:not(:disabled) {
+    background: rgba(100, 181, 246, 1);
+    transform: scale(1.05);
+    box-shadow: 0 0 10px rgba(100, 181, 246, 0.5);
+}
+
+.btn-shodan:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.shodan-data-container {
+    margin-top: 10px;
+}
+
+.shodan-loading,
+.shodan-info,
+.shodan-error {
+    padding: 12px;
+    border-radius: 5px;
+    font-size: 0.85em;
+    text-align: center;
+    margin-top: 10px;
+}
+
+.shodan-loading {
+    background: rgba(100, 181, 246, 0.1);
+    border: 1px solid rgba(100, 181, 246, 0.3);
+    color: #ffffff;
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+.shodan-info {
+    background: rgba(100, 181, 246, 0.1);
+    border: 1px solid rgba(100, 181, 246, 0.3);
+    color: #ffffff;
+}
+
+.shodan-error {
+    background: rgba(255, 71, 87, 0.1);
+    border: 1px solid rgba(255, 71, 87, 0.3);
+    color: #ff4757;
+}
+
+.shodan-results {
+    background: rgba(0, 217, 255, 0.05);
+    border: 1px solid rgba(0, 217, 255, 0.3);
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.shodan-results::-webkit-scrollbar {
+    width: 6px;
+}
+
+.shodan-results::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.shodan-results::-webkit-scrollbar-thumb {
+    background: rgba(0, 217, 255, 0.5);
+    border-radius: 10px;
+}
+
+.shodan-header {
+    color: #00d9ff;
+    font-weight: bold;
+    font-size: 0.95em;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(0, 217, 255, 0.2);
+}
+
+.shodan-section {
+    margin-bottom: 10px;
+    font-size: 0.85em;
+    line-height: 1.6;
+    color: #e0e0e0;
+}
+
+.shodan-section strong {
+    color: #00d9ff;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.shodan-ports {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 5px;
+}
+
+.port-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    background: rgba(0, 217, 255, 0.2);
+    border: 1px solid rgba(0, 217, 255, 0.4);
+    border-radius: 3px;
+    color: #00d9ff;
+    font-size: 0.85em;
+    font-weight: bold;
+}
+
+.vuln-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    background: rgba(255, 71, 87, 0.2);
+    border: 1px solid rgba(255, 71, 87, 0.4);
+    border-radius: 3px;
+    color: #ff4757;
+    font-size: 0.85em;
+    font-weight: bold;
+    margin: 2px;
+}
+
+.tag-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    background: rgba(100, 181, 246, 0.2);
+    border: 1px solid rgba(100, 181, 246, 0.4);
+    border-radius: 3px;
+    color: #ffffff;
+    font-size: 0.85em;
+    margin: 2px;
+}
+
+.shodan-more {
+    color: #c0c0c0;
+    font-style: italic;
+    font-size: 0.9em;
+}
+
+.shodan-vulns {
+    background: rgba(255, 71, 87, 0.05);
+    padding: 10px;
+    border-radius: 5px;
+    border-left: 3px solid #ff4757;
+}
+
+.shodan-footer {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(0, 217, 255, 0.2);
+    color: #c0c0c0;
+    font-size: 0.8em;
+    text-align: center;
 }
