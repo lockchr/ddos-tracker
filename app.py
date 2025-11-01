@@ -683,7 +683,7 @@ def index():
 @app.route('/api/attacks')
 def get_attacks():
     """Get all recent attacks"""
-    return jsonify(recent_attacks)
+    return jsonify(list(recent_attacks))
 
 @app.route('/api/generate_attack')
 def generate_new_attack():
@@ -1039,7 +1039,7 @@ def handle_connect():
         
         # Optionally send initial data to newly connected client
         if recent_attacks:
-            emit('initial_attacks', recent_attacks[-10:])  # Send last 10 attacks
+            emit('initial_attacks', list(recent_attacks)[-10:])  # Send last 10 attacks
             
     except Exception as e:
         print(f"❌ Error in handle_connect: {e}")
