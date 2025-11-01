@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDOS Attack Tracker</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🛡️ DDOS Attack Tracker</h1>
+            <p class="subtitle">Real-time monitoring of distributed denial-of-service attacks worldwide</p>
+            <div class="header-controls">
+                <div class="export-buttons">
+                    <a href="/api/export/json" class="btn btn-export" download>📥 Export JSON</a>
+                    <a href="/api/export/csv" class="btn btn-export" download>📥 Export CSV</a>
+                </div>
+                <button id="toggle-dark-mode" class="btn btn-theme">🌙 Dark Mode</button>
+            </div>
+        </header>
+
+        <!-- Search & Filter Bar -->
+        <div class="filter-bar">
+            <div class="search-container">
+                <input type="text" id="search-input" class="search-input" placeholder="🔍 Search by IP, country, or attack type...">
+                <button id="clear-search" class="btn-clear" title="Clear search">✕</button>
+            </div>
+            
+            <div class="filter-controls">
+                <select id="filter-severity" class="filter-select">
+                    <option value="">All Severities</option>
+                    <option value="critical">Critical</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                </select>
+
+                <select id="filter-attack-type" class="filter-select">
+                    <option value="">All Attack Types</option>
+                    <option value="SSH Brute Force">SSH Brute Force</option>
+                    <option value="HTTP Flood">HTTP Flood</option>
+                    <option value="DDoS">DDoS</option>
+                    <option value="Port Scan">Port Scan</option>
+                    <option value="DNS Amplification">DNS Amplification</option>
+                    <option value="SQL Injection">SQL Injection</option>
+                    <option value="Malware">Malware</option>
+                    <option value="Botnet">Botnet</option>
+                </select>
+
+                <select id="filter-country" class="filter-select">
+                    <option value="">All Countries</option>
+                </select>
+
+                <input type="date" id="filter-date-start" class="filter-date" title="Start date">
+                <input type="date" id="filter-date-end" class="filter-date" title="End date">
+
+                <button id="apply-filters" class="btn btn-primary">Apply Filters</button>
+                <button id="clear-filters" class="btn btn-secondary">Clear All</button>
+            </div>
+
+            <div class="filter-status" id="filter-status">
+                <span class="filter-badge" id="active-filters">No filters active</span>
+            </div>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-label">Total Attacks</div>
+                <div class="stat-value" id="total-attacks">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Critical</div>
+                <div class="stat-value critical" id="critical-count">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">High</div>
+                <div class="stat-value high" id="high-count">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Medium</div>
+                <div class="stat-value medium" id="medium-count">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Low</div>
+                <div class="stat-value low" id="low-count">0</div>
+            </div>
+            <div class="stat-card stat-threat" id="threat-score-preview">
+                <div class="stat-label">Threat Level</div>
+                <div class="stat-value" id="threat-level-preview">Loading...</div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-button active" data-tab="map">🗺️ Live Map</button>
+            <button class="tab-button" data-tab="threat">🎯 Threat Intel</button>
+            <button class="tab-button" data-tab="analytics">📊 Analytics</button>
+            <button class="tab-button" data-tab="common">🔥 Most Common</button>
+            <button class="tab-button" data-tab="details">📋 Attack Details</button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+            <!-- Live Map Tab -->
+            <div id="map-tab" class="tab-pane active">
+                <div style="background: rgba(0, 217, 255, 0.05); padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid rgba(0, 217, 255, 0.2);">
+                    <h3 style="color: #00d9ff; margin: 0 0 10px 0; font-size: 1.1em;">🗺️ Real-Time Attack Visualization</h3>
+                    <p style="margin: 0 0 10px 0; font-size: 0.95em; line-height: 1.5;">
+                        Watch live DDOS attacks as they happen globally. Each animated line shows an attack path from source (small marker) to target (large marker). 
+                        Colors indicate severity: <strong style="color: #ff4757;">Red = Critical</strong>, <strong style="color: #ff6348;">Orange = High</strong>, 
+                        <strong style="color: #ffa502;">Yellow = Medium</strong>, <strong style="color: #26de81;">Green = Low</strong>.
+                    </p>
+                    <p style="margin: 0; font-size: 0.9em; color: #aaa;">
+                        💡 <strong>Tip:</strong> Click any target marker to view attack details. The attack will stay visible while the popup is open. 
+                        More severe attacks remain visible longer (Critical: 45s, High: 35s, Medium: 25s, Low: 15s).
+                    </p>
+                </div>
+                <div class="map-container">
+                    <div id="map"></div>
+                    <div class="map-controls">
+                        <button id="toggle-attacks" class="btn btn-primary">⏸️ Pause</button>
+                        <button id="clear-map" class="btn btn-secondary">🗑️ Clear Map</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Threat Intelligence Tab -->
+            <div id="threat-tab" class="tab-pane">
+                <div class="threat-dashboard">
+                    <div class="threat-main-panel">
+                        <div class="threat-score-container">
+                            <h3>🎯 Global Threat Level</h3>
+                            <p style="font-size: 0.9rem; color: #999; margin: 0 0 15px 0;">
+                                Real-time threat assessment (0-100) based on attack frequency, severity, diversity, and geographic targeting. Updates every 5 seconds.
+                            </p>
+                            <div class="threat-gauge-wrapper">
+                                <div class="threat-gauge">
+                                    <svg class="gauge-svg" viewBox="0 0 200 120">
+                                        <defs>
+                                            <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" style="stop-color:#4ade80"/>
+                                                <stop offset="33%" style="stop-color:#facc15"/>
+                                                <stop offset="66%" style="stop-color:#fb923c"/>
+                                                <stop offset="100%" style="stop-color:#ef4444"/>
+                                            </linearGradient>
+                                        </defs>
+                                        <path class="gauge-background" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#333" stroke-width="20" stroke-linecap="round"/>
+                                        <path id="gauge-fill" class="gauge-fill" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#gaugeGradient)" stroke-width="20" stroke-linecap="round" stroke-dasharray="251.2" stroke-dashoffset="251.2"/>
+                                        <circle id="gauge-pointer" class="gauge-pointer" cx="20" cy="100" r="8" fill="#fff"/>
+                                    </svg>
+                                    <div class="gauge-value">
+                                        <div class="threat-score" id="threat-score">0</div>
+                                        <div class="threat-level" id="threat-level">Low</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="threat-trend">
+                                <span class="trend-label">Trend:</span>
+                                <span class="trend-value" id="threat-trend">
+                                    <span class="trend-icon">→</span> Stable
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="threat-factors">
+                            <h4>📊 Threat Factors</h4>
+                            <p style="font-size: 0.9rem; color: #999; margin: 0 0 15px 0;">
+                                Individual metrics that contribute to the overall threat score. Each factor has a maximum value shown in parentheses.
+                            </p>
+                            <div class="factor-bars">
+                                <div class="factor-item">
+                                    <div class="factor-header">
+                                        <span>Attack Frequency (max 30)</span>
+                                        <span id="factor-frequency">0</span>
+                                    </div>
+                                    <div class="factor-bar">
+                                        <div class="factor-fill" id="factor-frequency-bar" style="width: 0%"></div>
+                                    </div>
+                                    <div style="font-size: 0.8rem; color: #999; margin-top: 5px;">Number of attacks in last 5 minutes. Higher = sustained activity.</div>
+                                </div>
+                                <div class="factor-item">
+                                    <div class="factor-header">
+                                        <span>Severity Distribution (max 40)</span>
+                                        <span id="factor-severity">0</span>
+                                    </div>
+                                    <div class="factor-bar">
+                                        <div class="factor-fill" id="factor-severity-bar" style="width: 0%"></div>
+                                    </div>
+                                    <div style="font-size: 0.8rem; color: #999; margin-top: 5px;">Weighted by severity. Critical attacks have more impact.</div>
+                                </div>
+                                <div class="factor-item">
+                                    <div class="factor-header">
+                                        <span>Attack Diversity (max 15)</span>
+                                        <span id="factor-diversity">0</span>
+                                    </div>
+                                    <div class="factor-bar">
+                                        <div class="factor-fill" id="factor-diversity-bar" style="width: 0%"></div>
+                                    </div>
+                                    <div style="font-size: 0.8rem; color: #999; margin-top: 5px;">Variety of attack types. Multiple vectors = coordinated threat.</div>
+                                </div>
+                                <div class="factor-item">
+                                    <div class="factor-header">
+                                        <span>Geographic Concentration (max 15)</span>
+                                        <span id="factor-concentration">0</span>
+                                    </div>
+                                    <div class="factor-bar">
+                                        <div class="factor-fill" id="factor-concentration-bar" style="width: 0%"></div>
+                                    </div>
+                                    <div style="font-size: 0.8rem; color: #999; margin-top: 5px;">Attacks focused on specific regions = targeted campaigns.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="threat-side-panel">
+                        <div class="threat-history-chart">
+                            <h4>📈 Threat History (30 min)</h4>
+                            <canvas id="threatHistoryChart"></canvas>
+                        </div>
+
+                        <div class="countries-at-risk">
+                            <h4>🌍 Countries at Risk</h4>
+                            <p style="font-size: 0.85rem; color: #999; margin: 0 0 10px 0;">
+                                Top 10 most targeted countries in the last 10 minutes. Scores calculated from attack count and severity.
+                            </p>
+                            <div id="country-risk-list" class="risk-list">
+                                <div class="risk-item loading">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Most Common Attacks Tab -->
+            <div id="common-tab" class="tab-pane">
+                <div style="background: rgba(0, 217, 255, 0.05); padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid rgba(0, 217, 255, 0.2);">
+                    <h3 style="color: #00d9ff; margin: 0 0 10px 0; font-size: 1.1em;">🔥 Most Common Attacks Summary</h3>
+                    <p style="margin: 0 0 10px 0; font-size: 0.95em; line-height: 1.5;">
+                        Historical overview of attack patterns showing the most frequent attack types, sources, targets, and affected countries. 
+                        This aggregate data helps identify trending threats and high-risk regions over the entire monitoring period.
+                    </p>
+                    <p style="margin: 0; font-size: 0.9em; color: #aaa;">
+                        💡 <strong>Tip:</strong> Use this tab to understand long-term attack patterns and identify persistent threats that require attention.
+                    </p>
+                </div>
+                <div class="charts-section">
+                    <div class="chart-container">
+                        <h3>🔝 Top 10 Attack Types (All Time)</h3>
+                        <p style="font-size: 0.85em; color: #aaa; margin: 10px 0;">Most frequent attack methods recorded since monitoring began.</p>
+                        <canvas id="topAttackTypesChart"></canvas>
+                    </div>
+                    
+                    <div class="chart-row">
+                        <div class="chart-container chart-small">
+                            <h3>🌍 Top Attack Sources</h3>
+                            <p style="font-size: 0.85em; color: #aaa; margin: 10px 0;">Cities and regions where most attacks originate from.</p>
+                            <canvas id="topSourcesChart"></canvas>
+                        </div>
+                        <div class="chart-container chart-small">
+                            <h3>🎯 Top Attack Targets</h3>
+                            <p style="font-size: 0.85em; color: #aaa; margin: 10px 0;">Most frequently targeted cities and regions.</p>
+                            <canvas id="topTargetsChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-row">
+                        <div class="chart-container chart-small">
+                            <h3>☠️ Overall Severity Distribution</h3>
+                            <p style="font-size: 0.85em; color: #aaa; margin: 10px 0;">Breakdown of all recorded attacks by severity level.</p>
+                            <canvas id="commonSeverityChart"></canvas>
+                        </div>
+                        <div class="chart-container chart-small">
+                            <h3>🌎 Countries Under Attack</h3>
+                            <p style="font-size: 0.85em; color: #aaa; margin: 10px 0;">Countries experiencing the most attack activity (as source or target).</p>
+                            <canvas id="countriesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics Tab -->
+            <div id="analytics-tab" class="tab-pane">
+                <div style="background: rgba(0, 217, 255, 0.05); padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid rgba(0, 217, 255, 0.2);">
+                    <h3 style="color: #00d9ff; margin: 0 0 10px 0; font-size: 1.1em;">📊 Interactive Attack Analytics</h3>
+                    <p style="margin: 0 0 10px 0; font-size: 0.95em; line-height: 1.5;">
+                        Analyze attack patterns over time with interactive charts. Click any chart element to drill down and see detailed attack information for that specific metric.
+                    </p>
+                    <p style="margin: 0; font-size: 0.9em; color: #aaa;">
+                        💡 <strong>Tip:</strong> Use the time range selector to zoom in/out. Click data points, segments, or bars to view matching attacks and apply filters.
+                    </p>
+                </div>
+                <div class="charts-section">
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>📈 Attack Frequency Over Time</h3>
+                            <select id="timeRangeSelector" class="time-range-selector">
+                                <option value="5">Last 5 Minutes</option>
+                                <option value="15">Last 15 Minutes</option>
+                                <option value="30">Last 30 Minutes</option>
+                                <option value="60" selected>Last Hour</option>
+                                <option value="180">Last 3 Hours</option>
+                                <option value="360">Last 6 Hours</option>
+                                <option value="720">Last 12 Hours</option>
+                                <option value="1440">Last 24 Hours</option>
+                            </select>
+                        </div>
+                        <p style="font-size: 0.85em; color: #aaa; margin: 10px 0 0 0;">Number of attacks detected in each time interval. Click any point to view attacks from that period.</p>
+                        <canvas id="attackFrequencyChart"></canvas>
+                    </div>
+                    <div class="chart-row">
+                        <div class="chart-container chart-small">
+                            <h3>🎯 Severity Distribution</h3>
+                            <p style="font-size: 0.85em; color: #aaa; margin: 10px 0;">Breakdown of attacks by severity level. Click a segment to filter and view attacks of that severity.</p>
+                            <canvas id="severityChart"></canvas>
+                        </div>
+                        <div class="chart-container chart-small">
+                            <h3>⚡ Attack Types Breakdown</h3>
+                            <p style="font-size: 0.85em; color: #aaa; margin: 10px 0;">Most common attack methods detected. Click a bar to see all attacks of that specific type.</p>
+                            <canvas id="attackTypesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attack Details Tab -->
+            <div id="details-tab" class="tab-pane">
+                <div style="background: rgba(0, 217, 255, 0.05); padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid rgba(0, 217, 255, 0.2);">
+                    <h3 style="color: #00d9ff; margin: 0 0 10px 0; font-size: 1.1em;">📋 Detailed Attack Information</h3>
+                    <p style="margin: 0 0 10px 0; font-size: 0.95em; line-height: 1.5;">
+                        Comprehensive list view of attack data including top sources, targets, attack types, and the most recent attacks. 
+                        Click any attack in the recent attacks log to view full details including IP addresses, locations, and technical specifications.
+                    </p>
+                    <p style="margin: 0; font-size: 0.9em; color: #aaa;">
+                        💡 <strong>Tip:</strong> The recent attacks list shows the last 10 attacks detected. Click any item for complete information including coordinates and packet data.
+                    </p>
+                </div>
+                <div class="details-grid">
+                    <div class="panel-section">
+                        <h3>🎯 Top Attack Sources</h3>
+                        <p style="font-size: 0.85em; color: #aaa; margin: 0 0 10px 0;">Cities where attacks most frequently originate from.</p>
+                        <div id="top-sources" class="list-container"></div>
+                    </div>
+
+                    <div class="panel-section">
+                        <h3>🎯 Top Attack Targets</h3>
+                        <p style="font-size: 0.85em; color: #aaa; margin: 0 0 10px 0;">Most frequently targeted cities and locations.</p>
+                        <div id="top-targets" class="list-container"></div>
+                    </div>
+
+                    <div class="panel-section">
+                        <h3>📊 Attack Types Distribution</h3>
+                        <p style="font-size: 0.85em; color: #aaa; margin: 0 0 10px 0;">Count of each attack method detected in the current session.</p>
+                        <div id="attack-types" class="list-container"></div>
+                    </div>
+
+                    <div class="panel-section full-width">
+                        <h3>📝 Recent Attacks Log</h3>
+                        <p style="font-size: 0.85em; color: #aaa; margin: 0 0 10px 0;">Last 10 detected attacks. Click any attack to view complete details in a popup modal.</p>
+                        <div id="recent-attacks" class="attack-log"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attack Details Modal -->
+    <div id="attack-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Attack Details</h2>
+                <button class="modal-close" id="modal-close">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-section">
+                    <h3>🎯 Attack Information</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Type:</span>
+                            <span class="detail-value" id="modal-attack-type"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Severity:</span>
+                            <span class="detail-value" id="modal-severity"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Timestamp:</span>
+                            <span class="detail-value" id="modal-timestamp"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Bandwidth:</span>
+                            <span class="detail-value" id="modal-bandwidth"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Packets:</span>
+                            <span class="detail-value" id="modal-packets"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Duration:</span>
+                            <span class="detail-value" id="modal-duration"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-section">
+                    <h3>📍 Source Location</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">IP Address:</span>
+                            <span class="detail-value monospace" id="modal-source-ip"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Location:</span>
+                            <span class="detail-value" id="modal-source-location"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Country:</span>
+                            <span class="detail-value" id="modal-source-country"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Coordinates:</span>
+                            <span class="detail-value monospace" id="modal-source-coords"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-section">
+                    <h3>🎯 Target Location</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">IP Address:</span>
+                            <span class="detail-value monospace" id="modal-target-ip"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Location:</span>
+                            <span class="detail-value" id="modal-target-location"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Country:</span>
+                            <span class="detail-value" id="modal-target-country"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Coordinates:</span>
+                            <span class="detail-value monospace" id="modal-target-coords"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="btn btn-primary" id="copy-details">📋 Copy Details</button>
+                    <button class="btn btn-secondary" id="filter-similar">🔍 Find Similar Attacks</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Attack Feed Ticker -->
+    <div class="attack-ticker">
+        <div class="ticker-label">
+            <span class="ticker-icon">🚨</span>
+            <span>LIVE ATTACKS</span>
+        </div>
+        <div class="ticker-wrapper">
+            <div class="ticker-content" id="ticker-content">
+                <!-- Attack items will be added here dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script src="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

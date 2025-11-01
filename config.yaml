@@ -1,0 +1,89 @@
+# DDOS Tracker Configuration File
+# Override with environment variables: DDOS_CONFIG_<SECTION>_<KEY>
+
+# Application Settings
+app:
+  secret_key: null  # Will use FLASK_SECRET_KEY env var or auto-generate
+  debug: false
+  port: 5000
+  host: "0.0.0.0"
+
+# Security Settings
+security:
+  cors_origins:
+    - "http://localhost:3000"
+    - "http://localhost:5000"
+  rate_limit:
+    default_limits:
+      - "200 per day"
+      - "50 per hour"
+    export_limit: "10 per hour"
+    storage: "memory://"  # Change to "redis://localhost:6379" for distributed
+
+# Attack Tracking
+attack_tracking:
+  max_attacks: 100
+  max_threat_history: 60
+
+# Threat Scoring
+threat_scoring:
+  score_precision: 1
+  analysis_window_seconds: 300
+  update_interval: 5
+  thresholds:
+    critical: 80
+    high: 60
+    medium: 35
+  trend_detection:
+    escalation_threshold: 10
+    de_escalation_threshold: 10
+
+# Cache Configuration
+cache:
+  duration: 90
+  ip_geolocation_delay: 1.5
+
+# API Limits
+api:
+  max_export_limit: 1000
+  max_filter_limit: 1000
+  default_export_limit: 100
+  max_time_range_minutes: 1440
+
+# Attack Generation
+attack_generation:
+  us_attack_probability: 0.3
+  burst_attack_probability: 0.1
+  ipv6_probability: 0.4
+  intensity:
+    min: 0.3
+    max: 2.0
+  sleep_time:
+    min: 1.0
+    max: 5.0
+
+# Database
+database:
+  path: "attacks.db"
+
+# Logging
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR, CRITICAL
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: null  # Set to file path for file logging
+
+# OSINT Integration
+osint:
+  shodan:
+    enabled: true  # Shodan integration enabled
+    api_key: "B8IIuGB0KLjfxc0TaPeaAQ6zUC56RRAu"
+    cache_duration: 3600  # Cache Shodan results for 1 hour
+    timeout: 10
+    max_results: 10
+
+# Monitoring (Optional - for future APM integration)
+monitoring:
+  enabled: false
+  service_name: "ddos-tracker"
+  apm_server_url: null
+  environment: "production"
