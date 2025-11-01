@@ -495,12 +495,12 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ### Main Dashboard
 The interactive map displays real-time attack visualization with color-coded severity indicators and geographic distribution.
+<img width="1891" height="899" alt="image" src="https://github.com/user-attachments/assets/ab20557f-e829-4ce6-b22c-5d251249fb67" />
 
 ### Analytics Panel
 Comprehensive statistics showing attack patterns, top sources/targets, and trend indicators.
+<img width="1888" height="844" alt="image" src="https://github.com/user-attachments/assets/d5d31c99-e4ee-485c-8444-d7f416dcf9f1" />
 
-### API Response
-RESTful API provides programmatic access to all attack data with flexible filtering options.
 
 ---
 
